@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     NAME              => 'Class::DBI::Plugin::DeepAbstractSearch',
-    VERSION_FROM      => 'lib/Class/DBI/Plugin/DeepAbstractSearch.pm', # finds $VERSION
+    VERSION_FROM      => 'DeepAbstractSearch.pm', # finds $VERSION
     PREREQ_PM => {
 			Test::More => 0.32,
 			Class::DBI => 0.96,
@@ -12,6 +12,6 @@ WriteMakefile(
 			SQL::Abstract => 1.18,
     },
    ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM  => 'lib/Class/DBI/Plugin/DeepAbstractSearch.pm', # retrieve abstract from module
+      (ABSTRACT_FROM  => 'DeepAbstractSearch.pm', # retrieve abstract from module
        AUTHOR         => 'Stepan Riha <sriha@cpan.org>') : ()),
 );

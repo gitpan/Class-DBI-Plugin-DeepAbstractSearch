@@ -4,7 +4,7 @@ use Test::More;
 BEGIN {
     eval "use DBD::SQLite";
     plan $@ ? (skip_all => 'needs DND::SQLite for testing')
-	: (no_plan => 8);
+	: (tests => 12);
 }
 
 my $DB  = "t/testdb";
@@ -162,6 +162,9 @@ package main;
 	my $attr = { order_by => "title" } ;
 	my @cds = Music::CD->deep_search_where($where, $attr);
 	is_deeply [ @cds ], [ 5, 6, 7 ],		"Patsy's CDs by title";
+
+	my $count = Music::CD->count_deep_search_where($where);
+	is_deeply $count, 3,		"count Patsy's CDs by title";
 }
 
 {
@@ -180,6 +183,23 @@ package main;
 	my $attr = { order_by => "cd.title DESC, title" } ;
 	my @cds = Music::Track->deep_search_where($where, $attr);
 	is_deeply [ @cds ], [ 9, 10, 1, 2 ],		"First 2 tracks from W's albums after 2000 ";
+
+	my $count = Music::Track->count_deep_search_where($where);
+	is_deeply $count, 4,		"Count First 2 tracks from W's albums after 2000";
+}
+
+{
+	my $where = {
+		'cd.artist.name' => { -like => 'W%' },
+		'cd.year' => { '>' => 2000 },
+		'position' => { '<' => 3 }
+		};
+	my $attr = { order_by => [ 'cd.title DESC' , 'title' ] } ;
+	my @cds = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @cds ], [ 9, 10, 1, 2 ],		"First 2 tracks from W's albums after 2000, array ref order ";
+
+	my $count = Music::Track->count_deep_search_where($where);
+	is_deeply $count, 4,		"Count First 2 tracks from W's albums after 2000, array ref order";
 }
 
 

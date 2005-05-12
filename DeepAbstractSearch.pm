@@ -1,6 +1,6 @@
 package Class::DBI::Plugin::DeepAbstractSearch;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use strict;
 use warnings;
@@ -15,6 +15,35 @@ sub init {
 sub deep_search_where : Plugged
 {
     my $class = shift;
+    
+    my ($what, $from, $where, $bind) = $class->get_deep_where(@_);
+    
+	my $sql = <<"";
+SELECT DISTINCT $what
+FROM $from
+WHERE $where
+
+	return $class->sth_to_objects($class->sql_deeply_and_broadly($sql), $bind);
+}
+
+sub count_deep_search_where : Plugged
+{
+    my $class = shift;
+    
+    my ($what, $from, $where, $bind) = $class->get_deep_where(@_);
+    
+	my $sql = <<"";
+SELECT COUNT(*)
+FROM $from
+WHERE $where
+
+	return $class->sql_deeply_and_broadly($sql)->select_val(@$bind);
+}
+
+# my ($what, $from, $where, $bind) = CDBI->get_deep_where($where, $attr);
+sub get_deep_where : Plugged
+{
+    my $class = shift;
     my $where = (ref $_[0]) ? $_[0]          : { @_ };
     my $attr  = (ref $_[0]) ? $_[1]          : undef;
     my $order = ($attr)     ? delete($attr->{order_by}) : undef;
@@ -25,6 +54,7 @@ sub deep_search_where : Plugged
 	$where = _transform_where($class, $joins, $where);
 	if ($order) {
 		my %order_fields;
+		$order = join(", ", @$order) if ref $order;
 		$order = _transform_order($class, $joins, $order, \%order_fields);
 		$order_fields = join(", ", map { /\./ ? $_ : () } keys %order_fields);
 		$order_fields = ", $order_fields"
@@ -48,16 +78,15 @@ sub deep_search_where : Plugged
 	## Build pseudo-query
 	my $alias = $joins->{''}->{alias};
 	my $essential = defined ($alias) ? "__ESSENTIAL($alias)__" : "__ESSENTIAL__";
-	$sql = <<"";
-SELECT DISTINCT $essential$order_fields
-FROM $tables
-WHERE $join $filter
+
+	$sql = join("\0", "$essential$order_fields", $tables, "$join $filter");
 
 	## Transform to real SQL
 	$sql = $class->transform_sql($sql);
 
-	return $class->sth_to_objects($class->sql_deeply_and_broadly($sql), \@bind);
+	return (split(/\0/, $sql), \@bind);
 }
+
 
 # Replace field names with fully qualified (table_alias.field) names
 sub _transform_where {
@@ -239,9 +268,30 @@ from the corresponding foreign key field in the primary class.
 		}
 	);
 
+=head2 count_deep_search_where
+
+	my $num_cds = Music::CD->count_deep_search_where(
+		{
+			'artist.name' => $artist_name
+		}
+	);
+
+This method will be exported into the calling class, and allows for counting
+of objects using L<SQL::Abstract> format based on fields from the calling
+class as well as using fields in classes related through a (chain of) 'has_a'
+relationships to the calling class.
+
+=head2 get_deep_where
+
+    my ($what, $from, $where, $bind) = $class->get_deep_where($where, $attr);
+
+This method will be exported into the calling class, and allows for retrieving
+SQL fragments used for creating queries.  The parameters are the same as to
+deep_search_where.
+
 =head1 AUTHOR
 
-Stepan Riha, E<lt>sriha@cpan.org<gt>.
+Stepan Riha, C<sriha@cpan.net>
 
 =head1 COPYRIGHT
 
