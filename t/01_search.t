@@ -4,7 +4,7 @@ use Test::More;
 BEGIN {
     eval "use DBD::SQLite";
     plan $@ ? (skip_all => 'needs DND::SQLite for testing')
-	: (tests => 12);
+	: (tests => 17);
 }
 
 my $DB  = "t/testdb";
@@ -202,6 +202,49 @@ package main;
 	is_deeply $count, 4,		"Count First 2 tracks from W's albums after 2000, array ref order";
 }
 
+{
+	my $where = { 'cd.title' => [ -and => { -like => '%o%' }, { -like => '%W%' } ] };
+	my $attr = { order_by => [ 'cd.id' ] } ;
+
+	my @tracks = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @tracks ], [ 3, 3, 4, 4, 4, 4, 4, 4 ],		"Tracks from CD titles containing 'o' AND 'W'";
+}
+
+{
+	my $where = { 'cd.year' => [ 1995, 1999 ] };
+	my $attr = { order_by => [ 'cd.id' ] } ;
+
+	my @tracks = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @tracks ], [ 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6 ],
+			"Tracks from CDs from 1995, 1999";
+}
+
+{
+	my $where = { 'cd.year' => { -in => [ 1995, 1999 ] } };
+	my $attr = { order_by => [ 'cd.id' ] } ;
+
+	my @tracks = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @tracks ], [ 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6 ],
+			"Tracks from CDs in 1995, 1999";
+}
+
+{
+	my $where = { -and => [ 'cd.year' => [ 1995, 1999 ], position => { '<=', 2 } ] };
+	my $attr = { order_by => [ 'cd.id' ] } ;
+
+	my @tracks = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @tracks ], [ 4, 4, 5, 5, 6, 6 ],
+			"First 2 tracks Tracks from CDs from 1995, 1999";
+}
+
+{
+	my $where = { -and => [ 'cd.year' => { -in => [ 1995, 1999 ] }, position => { '<=', 2 } ] };
+	my $attr = { order_by => [ 'cd.id' ] } ;
+
+	my @tracks = Music::Track->deep_search_where($where, $attr);
+	is_deeply [ @tracks ], [ 4, 4, 5, 5, 6, 6 ],
+			"First 2 tracks Tracks from CDs in 1995, 1999";
+}
 
 END { unlink $DB if -e $DB }
 

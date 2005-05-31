@@ -1,5 +1,9 @@
 Revision history for Perl extension Class::DBI::Plugin::DeepAbstractSearch.
 
+0.03  Mon May  30 21:55:02 2005
+	- fixed conditions containing ARRAY REF
+	  (thanks to Shawn  McDonald)
+
 0.02  Thu May  12 22:55:02 2005
 	- added methods:
 		count_deep_search_where

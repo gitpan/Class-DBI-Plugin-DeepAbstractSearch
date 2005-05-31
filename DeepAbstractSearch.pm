@@ -1,6 +1,6 @@
 package Class::DBI::Plugin::DeepAbstractSearch;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use strict;
 use warnings;
@@ -90,30 +90,53 @@ sub get_deep_where : Plugged
 
 # Replace field names with fully qualified (table_alias.field) names
 sub _transform_where {
-    my ($class, $joins, $where) = @_;
-    my $ref   = ref $where || '';
-	my $val;
-	
-	if($ref eq 'ARRAY') {
-		if($where->[0] !~ /^[a-z]/i) {
-			$val = [ $where->[0], _transform_where($class, $joins, $where->[1]) ];
-		} else {
-			$val = [ _transform_field($class, $joins, $where->[0]), $where->[1] ];
-		}
-	} elsif ($ref eq 'HASH') {
-		$val = {};
-		foreach my $key (keys %$where) {
-			if($key !~ /^[a-z]/i) {
-				$val->{$key} = _transform_where($class, $joins, $where->{$key});
-			} else {
-				$val->{_transform_field($class, $joins, $key)} = _transform_where($class, $joins, $where->{$key});
-			}
-		}
-	} else {
-		$val = $where;
-	}
+    my ($class, $joins, $where, $hint) = @_;
+    my $ref  = ref $where || '';
+    my $val;
 
-	$val;
+    $hint ||= '';
+
+    if($ref eq 'ARRAY') {
+        if ($hint ne 'exps' && $where->[0] !~ /^[a-z]/i) {
+            ## transforming [ operator, expr1, expr2 ]
+            ## or array in  { operator => ['assigned', 'in-progress']}
+            $val = [];
+            while ($_ = shift @$where) {
+                push @$val, ((ref $_) ? _transform_where($class, $joins, $_) : $_);
+            }
+        } else {
+            ## transforming [ field1 => expr1, field2 => expr2 ]
+            ## or array in  { operator => [ field1 => expr1, field2 => expr2 ]}
+            $val = [];
+            while ($_ = shift @$where) {
+                push @$val, _transform_field($class, $joins, $_);
+                push @$val, _transform_where($class, $joins, shift @$where);
+            }
+        }
+    } elsif ($ref eq 'HASH') {
+        $val = {};
+        foreach my $key (keys %$where) {
+            if($key !~ /^[a-z]/i) {
+                ## transforming   { operator => expr }
+                ## or operator in   field => { operator => [ values ] }
+                if($key =~ /^-?\s*(not[\s_]+)?(in|between)\s*$/i) {
+                	## special case for IN and BETWEEN
+	                $hint = 'val';
+                } else {
+	                $hint ||= 'exps';
+	            }
+                $val->{$key} = _transform_where($class, $joins, $where->{$key}, $hint);
+            } else {
+                ## transforming { field => expr }
+                $val->{_transform_field($class, $joins, $key)} =
+                    _transform_where($class, $joins, $where->{$key}, 'val');
+            }
+        }
+    } else {
+        ## literal or SQL
+        $val = $where;
+    }
+    $val;
 }
 
 # Change "table.field1.field2, table.field3.field4 DESC" into
