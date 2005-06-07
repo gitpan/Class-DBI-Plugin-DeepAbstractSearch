@@ -1,6 +1,6 @@
 package Class::DBI::Plugin::DeepAbstractSearch;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use strict;
 use warnings;
@@ -97,20 +97,21 @@ sub _transform_where {
     $hint ||= '';
 
     if($ref eq 'ARRAY') {
+    	my @where = @$where;
         if ($hint ne 'exps' && $where->[0] !~ /^[a-z]/i) {
             ## transforming [ operator, expr1, expr2 ]
             ## or array in  { operator => ['assigned', 'in-progress']}
             $val = [];
-            while ($_ = shift @$where) {
+            while ($_ = shift @where) {
                 push @$val, ((ref $_) ? _transform_where($class, $joins, $_) : $_);
             }
         } else {
             ## transforming [ field1 => expr1, field2 => expr2 ]
             ## or array in  { operator => [ field1 => expr1, field2 => expr2 ]}
             $val = [];
-            while ($_ = shift @$where) {
+            while ($_ = shift @where) {
                 push @$val, _transform_field($class, $joins, $_);
-                push @$val, _transform_where($class, $joins, shift @$where);
+                push @$val, _transform_where($class, $joins, shift @where);
             }
         }
     } elsif ($ref eq 'HASH') {
@@ -314,7 +315,7 @@ deep_search_where.
 
 =head1 AUTHOR
 
-Stepan Riha, C<sriha@cpan.net>
+Stepan Riha, C<sriha@cpan.org>
 
 =head1 COPYRIGHT
 
