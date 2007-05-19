@@ -1,5 +1,9 @@
 Revision history for Perl extension Class::DBI::Plugin::DeepAbstractSearch.
 
+0.05  Fri May  17 23:10:25 2007
+	- fixed { 'field' => [ 'txt1, 'txt2', 'txt3' ] }
+	  (thanks to Charlie Katz)
+
 0.04  Mon Jun  07 12:42:47 2005
 	- fixed ARRAY REFs being munged (when used with Pager)
 	- fixed my email address in documentation (Duh!)

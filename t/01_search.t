@@ -4,7 +4,7 @@ use Test::More;
 BEGIN {
     eval "use DBD::SQLite";
     plan $@ ? (skip_all => 'needs DND::SQLite for testing')
-	: (tests => 17);
+	: (tests => 19);
 }
 
 my $DB  = "t/testdb";
@@ -31,22 +31,35 @@ INSERT INTO artists VALUES (1, "Willie Nelson");
 INSERT INTO artists VALUES (2, "Patsy Cline");
 
 ---------------------------------------
+-- Labels
+---------------------------------------
+CREATE TABLE labels (
+	id INTEGER NOT NULL PRIMARY KEY,
+	name VARCHAR(32)
+);
+
+INSERT INTO labels VALUES (1, "Columbia");
+INSERT INTO labels VALUES (2, "Sony");
+INSERT INTO labels VALUES (3, "Supraphon");
+
+---------------------------------------
 -- CDs
 ---------------------------------------
 CREATE TABLE cds (
 	id INTEGER NOT NULL PRIMARY KEY,
+	label INTEGER,
 	artist INTEGER,
 	title VARCHAR(32),
 	year INTEGER
 );
-INSERT INTO cds VALUES (1, 1, "Songs", 2005);
-INSERT INTO cds VALUES (2, 1, "Read Headed Stanger", 2000);
-INSERT INTO cds VALUES (3, 1, "Wanted! The Outlaws", 2004);
-INSERT INTO cds VALUES (4, 1, "The Very Best of Willie Nelson", 1999);
+INSERT INTO cds VALUES (1, 1, 1, "Songs", 2005);
+INSERT INTO cds VALUES (2, 2, 1, "Read Headed Stanger", 2000);
+INSERT INTO cds VALUES (3, 1, 1, "Wanted! The Outlaws", 2004);
+INSERT INTO cds VALUES (4, 2, 1, "The Very Best of Willie Nelson", 1999);
 
-INSERT INTO cds VALUES (5, 2, "12 Greates Hits", 1999);
-INSERT INTO cds VALUES (6, 2, "Sweet Dreams", 1995);
-INSERT INTO cds VALUES (7, 2, "The Best of Patsy Cline", 1991);
+INSERT INTO cds VALUES (5, 1, 2, "12 Greates Hits", 1999);
+INSERT INTO cds VALUES (6, 2, 2, "Sweet Dreams", 1995);
+INSERT INTO cds VALUES (7, 3, 2, "The Best of Patsy Cline", 1991);
 
 ---------------------------------------
 -- Tracks
@@ -107,12 +120,19 @@ Music::Artist->table('artists');
 Music::Artist->columns(All => qw/id name/);
 Music::Artist->has_many(cds => 'Music::CD');
 
+package Music::Label;
+use base 'Music::DBI';
+Music::Label->table('labels');
+Music::Label->columns(All => qw/id name/);
+Music::Label->has_many(cds => 'Music::CD');
+
 package Music::CD;
 use base 'Music::DBI';
 Music::CD->table('cds');
-Music::CD->columns(All => qw/id artist title year/);
+Music::CD->columns(All => qw/id label artist title year/);
 Music::CD->has_many(tracks => 'Music::Track');
 Music::CD->has_a(artist => 'Music::Artist');
+Music::CD->has_a(label => 'Music::Label');
 
 package Music::Track;
 use base 'Music::DBI';
@@ -244,6 +264,24 @@ package main;
 	my @tracks = Music::Track->deep_search_where($where, $attr);
 	is_deeply [ @tracks ], [ 4, 4, 5, 5, 6, 6 ],
 			"First 2 tracks Tracks from CDs in 1995, 1999";
+}
+
+{
+	my $where = { 'label.name' => { -in => [ 'Sony', 'Supraphon', 'Bogus' ] } };
+	my $attr = { order_by => [ 'id' ] } ;
+
+	my @cds = Music::CD->deep_search_where($where, $attr);
+	is_deeply [ @cds ], [ 2, 4, 6, 7 ],
+			"CDs from Sony or Supraphon";
+}
+
+{
+	my $where = { 'label.name' => [ 'Sony', 'Supraphon', 'Bogus' ] };
+	my $attr = { order_by => [ 'id' ] } ;
+
+	my @cds = Music::CD->deep_search_where($where, $attr);
+	is_deeply [ @cds ], [ 2, 4, 6, 7 ],
+			"CDs from Sony or Supraphon";
 }
 
 END { unlink $DB if -e $DB }

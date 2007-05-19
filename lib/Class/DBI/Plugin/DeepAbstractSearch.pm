@@ -1,6 +1,6 @@
 package Class::DBI::Plugin::DeepAbstractSearch;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use strict;
 use warnings;
@@ -98,7 +98,7 @@ sub _transform_where {
 
     if($ref eq 'ARRAY') {
     	my @where = @$where;
-        if ($hint ne 'exps' && $where->[0] !~ /^[a-z]/i) {
+        if ($hint ne 'exps' || $where->[0] !~ /^[a-z]/i) {
             ## transforming [ operator, expr1, expr2 ]
             ## or array in  { operator => ['assigned', 'in-progress']}
             $val = [];
@@ -319,7 +319,7 @@ Stepan Riha, C<sriha@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005 Stepan Riha. All rights reserved.
+Copyright (C) 2005, 2007 Stepan Riha. All rights reserved.
 
 This module is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
