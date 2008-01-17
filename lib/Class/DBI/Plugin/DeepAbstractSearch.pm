@@ -1,6 +1,6 @@
 package Class::DBI::Plugin::DeepAbstractSearch;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use strict;
 use warnings;
@@ -319,7 +319,7 @@ Stepan Riha, C<sriha@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005, 2007 Stepan Riha. All rights reserved.
+Copyright (C) 2005, 2007, 2008 Stepan Riha. All rights reserved.
 
 This module is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

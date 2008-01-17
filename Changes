@@ -1,5 +1,8 @@
 Revision history for Perl extension Class::DBI::Plugin::DeepAbstractSearch.
 
+0.06  Wed Jan  16 23:10:25 2008
+	- added Make.PL back to MANIFEST
+
 0.05  Fri May  17 23:10:25 2007
 	- fixed { 'field' => [ 'txt1, 'txt2', 'txt3' ] }
 	  (thanks to Charlie Katz)

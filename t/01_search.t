@@ -3,7 +3,7 @@ use Test::More;
 
 BEGIN {
     eval "use DBD::SQLite";
-    plan $@ ? (skip_all => 'needs DND::SQLite for testing')
+    plan $@ ? (skip_all => 'needs DBD::SQLite for testing')
 	: (tests => 19);
 }
 
